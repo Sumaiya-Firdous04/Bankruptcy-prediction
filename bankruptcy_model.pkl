@@ -1,0 +1,11 @@
+import joblib
+
+# Assume Random Forest is your best model
+from sklearn.ensemble import RandomForestClassifier
+
+# Train model (example)
+rf = RandomForestClassifier(n_estimators=100)
+rf.fit(X_train, y_train)
+
+# Save model
+joblib.dump(rf, "bankruptcy_model.pkl")
