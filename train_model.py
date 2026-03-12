@@ -6,15 +6,14 @@ from sklearn.ensemble import RandomForestClassifier
 import joblib
 import os
 
-# Create models folder if it doesn't exist
 os.makedirs("models", exist_ok=True)
 
 # Load dataset
 df = pd.read_excel("Bankruptcy-Prevention.xlsx")
-df.columns = df.columns.str.strip()  # Remove spaces
+df.columns = df.columns.str.strip()  
 
 # Encode categorical features and save encoders
-feature_columns = df.columns[:-1]  # All except 'class'
+feature_columns = df.columns[:-1]  
 target_column = 'class'
 
 encoders = {}
