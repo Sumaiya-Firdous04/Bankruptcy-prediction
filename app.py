@@ -1,145 +1,509 @@
-# # app.py
+# # # app.py
+# # import streamlit as st
+# # import pandas as pd
+# # import joblib
+# # import os
+
+# # st.set_page_config(page_title="Bankruptcy Prediction", layout="centered")
+# # st.title("🏦 Bankruptcy Prediction App")
+
+# # # Load model
+# # model = joblib.load("models/bankruptcy_model.pkl")
+
+# # # Load encoders
+# # feature_columns = ['industrial_risk', 'management_risk', 'financial_flexibility',
+# #                    'credibility', 'competitiveness', 'operating_risk']
+# # encoders = {}
+# # for col in feature_columns + ['class']:
+# #     encoders[col] = joblib.load(f"models/{col}_encoder.pkl")
+
+# # st.header("Enter company financial information:")
+
+# # # Create input form
+# # input_data = {}
+# # for col in feature_columns:
+# #     classes = encoders[col].classes_
+# #     input_data[col] = st.selectbox(col.replace("_", " ").title(), classes)
+
+# # input_df = pd.DataFrame(input_data, index=[0])
+
+# # # Encode inputs
+# # for col in feature_columns:
+# #     input_df[col] = encoders[col].transform(input_df[col])
+
+# # # Prediction
+# # if st.button("Predict Bankruptcy"):
+# #     prediction = model.predict(input_df)
+# #     result = encoders['class'].inverse_transform(prediction)[0]
+# #     if result.lower() in ["bankrupt", "1"]:
+# #         st.error("⚠️ The company is predicted to **BANKRUPT**")
+# #     else:
+# #         st.success("✅ The company is predicted to **NOT BANKRUPT**")
+
 # import streamlit as st
 # import pandas as pd
 # import joblib
 # import os
 
-# st.set_page_config(page_title="Bankruptcy Prediction", layout="centered")
-# st.title("🏦 Bankruptcy Prediction App")
+# # -----------------------------
+# # Page config
+# # -----------------------------
+# st.set_page_config(
+#     page_title="Bankruptcy Prediction",
+#     layout="wide",
+#     initial_sidebar_state="expanded"
+# )
 
-# # Load model
-# model = joblib.load("models/bankruptcy_model.pkl")
+# st.title("🏦 Bankruptcy Prediction Dashboard")
 
-# # Load encoders
-# feature_columns = ['industrial_risk', 'management_risk', 'financial_flexibility',
-#                    'credibility', 'competitiveness', 'operating_risk']
+# st.markdown("""
+# Welcome! Enter your company's financial information below to predict bankruptcy.
+# """)
+
+# # -----------------------------
+# # Load model and encoders
+# # -----------------------------
+# model_path = "models/bankruptcy_model.pkl"
+# if not os.path.exists(model_path):
+#     st.error("Model file not found! Please run the training script first.")
+#     st.stop()
+
+# model = joblib.load(model_path)
+
+# feature_columns = [
+#     'industrial_risk', 'management_risk', 'financial_flexibility',
+#     'credibility', 'competitiveness', 'operating_risk'
+# ]
+
 # encoders = {}
 # for col in feature_columns + ['class']:
-#     encoders[col] = joblib.load(f"models/{col}_encoder.pkl")
+#     encoder_path = f"models/{col}_encoder.pkl"
+#     if not os.path.exists(encoder_path):
+#         st.error(f"Encoder for {col} not found! Please run the training script first.")
+#         st.stop()
+#     encoders[col] = joblib.load(encoder_path)
 
-# st.header("Enter company financial information:")
+# # -----------------------------
+# # Input Form with Columns
+# # -----------------------------
+# st.header("📊 Company Financial Details")
+# possible_values = [0, 0.5, 1, 2]
 
-# # Create input form
 # input_data = {}
-# for col in feature_columns:
-#     classes = encoders[col].classes_
-#     input_data[col] = st.selectbox(col.replace("_", " ").title(), classes)
+# cols = st.columns(3)  # 3 columns for layout
+
+# for idx, col in enumerate(feature_columns):
+#     input_data[col] = cols[idx % 3].selectbox(
+#         col.replace("_", " ").title(),
+#         possible_values
+#     )
 
 # input_df = pd.DataFrame(input_data, index=[0])
 
-# # Encode inputs
+# # -----------------------------
+# # Encode inputs safely
+# # -----------------------------
+# can_encode = True
+# invalid_feature = None
 # for col in feature_columns:
-#     input_df[col] = encoders[col].transform(input_df[col])
+#     try:
+#         input_df[col] = encoders[col].transform(input_df[col])
+#     except ValueError:
+#         can_encode = False
+#         invalid_feature = col
+#         break
 
-# # Prediction
+# # -----------------------------
+# # Prediction Button & Result
+# # -----------------------------
 # if st.button("Predict Bankruptcy"):
-#     prediction = model.predict(input_df)
-#     result = encoders['class'].inverse_transform(prediction)[0]
-#     if result.lower() in ["bankrupt", "1"]:
-#         st.error("⚠️ The company is predicted to **BANKRUPT**")
+#     if not can_encode:
+#         st.warning(f"⚠️ Prediction unavailable: Invalid input for **{invalid_feature.replace('_',' ').title()}**")
 #     else:
-#         st.success("✅ The company is predicted to **NOT BANKRUPT**")
+#         prediction = model.predict(input_df)[0]
+#         result = encoders['class'].inverse_transform([prediction])[0]
+
+#         if result.lower() == "bankruptcy":
+#             st.markdown(
+#                 "<div style='background-color:#ffcccc; padding:20px; border-radius:10px; text-align:center;'>"
+#                 "<h2>⚠️ The company is predicted to <strong>BANKRUPT</strong></h2></div>", 
+#                 unsafe_allow_html=True
+#             )
+#         elif result.lower() == "non-bankruptcy":
+#             st.markdown(
+#                 "<div style='background-color:#ccffcc; padding:20px; border-radius:10px; text-align:center;'>"
+#                 "<h2>✅ The company is predicted to <strong>NOT BANKRUPT</strong></h2></div>", 
+#                 unsafe_allow_html=True
+#             )
+#         else:
+#             st.warning("⚠️ Prediction unavailable or invalid. Please check the input.")
+
+
+# # # app.py
+# # import streamlit as st
+# # import pandas as pd
+# # import joblib
+# # import os
+
+# # # Page config
+# # st.set_page_config(page_title="Bankruptcy Prediction", layout="centered")
+# # st.title("🏦 Bankruptcy Prediction App")
+
+# # # -----------------------------
+# # # Load model and encoders
+# # # -----------------------------
+# # model_path = "models/bankruptcy_model.pkl"
+# # if not os.path.exists(model_path):
+# #     st.error("Model file not found! Please run the training script first.")
+# #     st.stop()
+
+# # model = joblib.load(model_path)
+
+# # feature_columns = [
+# #     'industrial_risk', 'management_risk', 'financial_flexibility',
+# #     'credibility', 'competitiveness', 'operating_risk'
+# # ]
+
+# # encoders = {}
+# # for col in feature_columns + ['class']:
+# #     encoder_path = f"models/{col}_encoder.pkl"
+# #     if not os.path.exists(encoder_path):
+# #         st.error(f"Encoder for {col} not found! Please run the training script first.")
+# #         st.stop()
+# #     encoders[col] = joblib.load(encoder_path)
+
+# # # -----------------------------
+# # # Input Form
+# # # -----------------------------
+# # st.header("Enter company financial information:")
+
+# # input_data = {}
+# # for col in feature_columns:
+# #     classes = encoders[col].classes_
+# #     input_data[col] = st.selectbox(col.replace("_", " ").title(), classes)
+
+# # input_df = pd.DataFrame(input_data, index=[0])
+
+# # # Encode inputs
+# # for col in feature_columns:
+# #     input_df[col] = encoders[col].transform(input_df[col])
+
+# # # -----------------------------
+# # # Prediction
+# # # -----------------------------
+# # if st.button("Predict Bankruptcy"):
+# #     prediction = model.predict(input_df)[0]  # scalar 0 or 1
+# #     result = encoders['class'].inverse_transform([prediction])[0]
+
+# #     st.write("Raw prediction output (numeric):", prediction)
+# #     st.write("Decoded class label:", result)
+# #     st.write("Class encoder mapping:", list(enumerate(encoders['class'].classes_)))
+
+# #     # Adjust this condition depending on encoder classes order
+# #     # Example: if bankrupt class is mapped to 0, then prediction == 0 means BANKRUPT
+# #     bankrupt_class_index = list(encoders['class'].classes_).index('bankruptcy') if 'bankruptcy' in encoders['class'].classes_ else None
+
+# #     if bankrupt_class_index is not None:
+# #         if prediction == bankrupt_class_index:
+# #             st.error("⚠️ The company is predicted to **BANKRUPT**")
+# #         else:
+# #             st.success("✅ The company is predicted to **NOT BANKRUPT**")
+# #     else:
+# #         # Fallback if 'bankruptcy' label not found, just check numeric prediction
+# #         if prediction == 1:
+# #             st.error("⚠️ The company is predicted to **BANKRUPT**")
+# #         else:
+# #             st.success("✅ The company is predicted to **NOT BANKRUPT**")
+# # app.py
+# # import streamlit as st
+# # import pandas as pd
+# # import joblib
+# # import os
+
+# # # Page config
+# # st.set_page_config(page_title="Bankruptcy Prediction", layout="centered")
+# # st.title("🏦 Bankruptcy Prediction App")
+
+# # # -----------------------------
+# # # Load model and encoders
+# # # -----------------------------
+# # model_path = "models/bankruptcy_model.pkl"
+# # if not os.path.exists(model_path):
+# #     st.error("Model file not found! Please run the training script first.")
+# #     st.stop()
+
+# # model = joblib.load(model_path)
+
+# # feature_columns = [
+# #     'industrial_risk', 'management_risk', 'financial_flexibility',
+# #     'credibility', 'competitiveness', 'operating_risk'
+# # ]
+
+# # encoders = {}
+# # for col in feature_columns + ['class']:
+# #     encoder_path = f"models/{col}_encoder.pkl"
+# #     if not os.path.exists(encoder_path):
+# #         st.error(f"Encoder for {col} not found! Please run the training script first.")
+# #         st.stop()
+# #     encoders[col] = joblib.load(encoder_path)
+
+# # # -----------------------------
+# # # Input Form
+# # # -----------------------------
+# # st.header("Enter company financial information:")
+
+# # input_data = {}
+
+# # for col in feature_columns:
+# #     classes = encoders[col].classes_
+# #     input_data[col] = st.selectbox(col.replace("_", " ").title(), classes)
+
+# # input_df = pd.DataFrame(input_data, index=[0])
+
+# # # Encode inputs
+# # for col in feature_columns:
+# #     input_df[col] = encoders[col].transform(input_df[col])
+
+# # # -----------------------------
+# # # Prediction
+# # # -----------------------------
+# # if st.button("Predict Bankruptcy"):
+# #     prediction = model.predict(input_df)[0]  # scalar 0 or 1
+# #     result = encoders['class'].inverse_transform([prediction])[0]
+
+# #     st.write("Decoded class label:", result)
+
+# #     # Optional: colored alert
+# #     if result.lower() == "bankruptcy":
+# #         st.error("⚠️ The company is predicted to **BANKRUPT**")
+# #     else:
+# #         st.success("✅ The company is predicted to **NOT BANKRUPT**")
 
 import streamlit as st
-import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 import joblib
-import os
 
-# -----------------------------
-# Page config
-# -----------------------------
+# -------------------------
+# PAGE CONFIG
+# -------------------------
 st.set_page_config(
-    page_title="Bankruptcy Prediction",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_title="Bankruptcy AI Dashboard",
+    page_icon="🏦",
+    layout="wide"
 )
 
-st.title("🏦 Bankruptcy Prediction Dashboard")
-
+# -------------------------
+# CUSTOM CSS
+# -------------------------
 st.markdown("""
-Welcome! Enter your company's financial information below to predict bankruptcy.
-""")
+<style>
 
-# -----------------------------
-# Load model and encoders
-# -----------------------------
-model_path = "models/bankruptcy_model.pkl"
-if not os.path.exists(model_path):
-    st.error("Model file not found! Please run the training script first.")
-    st.stop()
+.stApp {
+background: linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+color:white;
+}
 
-model = joblib.load(model_path)
+[data-testid="stMetricValue"] {
+color:white !important;
+font-size:38px !important;
+font-weight:bold;
+}
 
-feature_columns = [
-    'industrial_risk', 'management_risk', 'financial_flexibility',
-    'credibility', 'competitiveness', 'operating_risk'
-]
+[data-testid="stMetricLabel"] {
+color:#e0e0e0 !important;
+}
 
-encoders = {}
-for col in feature_columns + ['class']:
-    encoder_path = f"models/{col}_encoder.pkl"
-    if not os.path.exists(encoder_path):
-        st.error(f"Encoder for {col} not found! Please run the training script first.")
-        st.stop()
-    encoders[col] = joblib.load(encoder_path)
+.title{
+text-align:center;
+font-size:55px;
+font-weight:800;
+margin-top:10px;
+color:white;
+}
 
-# -----------------------------
-# Input Form with Columns
-# -----------------------------
-st.header("📊 Company Financial Details")
-possible_values = [0, 0.5, 1, 2]
+.subtitle{
+text-align:center;
+font-size:20px;
+color:#d0d0d0;
+margin-bottom:30px;
+}
 
-input_data = {}
-cols = st.columns(3)  # 3 columns for layout
+label {
+color:white !important;
+font-size:16px !important;
+font-weight:500;
+}
 
-for idx, col in enumerate(feature_columns):
-    input_data[col] = cols[idx % 3].selectbox(
-        col.replace("_", " ").title(),
-        possible_values
+.stSelectbox div[data-baseweb="select"]{
+background-color:#1f2c38;
+color:white;
+border-radius:10px;
+border:1px solid rgba(255,255,255,0.2);
+}
+
+.stButton > button{
+background: linear-gradient(90deg,#ff512f,#dd2476);
+color:white;
+font-weight:600;
+font-size:18px;
+height:45px;
+width:260px;
+border-radius:12px;
+border:none;
+}
+
+.stButton > button:hover{
+background: linear-gradient(90deg,#00c6ff,#4facfe);
+transform:scale(1.05);
+transition:0.3s;
+}
+
+.result-safe{
+background:#00c853;
+padding:18px;
+border-radius:12px;
+text-align:center;
+font-size:22px;
+font-weight:600;
+}
+
+.result-risk{
+background:#ff1744;
+padding:18px;
+border-radius:12px;
+text-align:center;
+font-size:22px;
+font-weight:600;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+# -------------------------
+# LOAD MODEL
+# -------------------------
+model = joblib.load("bankruptcy_model.pkl")
+
+# -------------------------
+# HEADER
+# -------------------------
+st.markdown("<div class='title'>🏦 Bankruptcy Prediction System</div>", unsafe_allow_html=True)
+
+# -------------------------
+# RISK VALUES
+# -------------------------
+risk = {
+"Low (0)":0,
+"Medium (0.5)":0.5,
+"High (1)":1
+}
+
+# -------------------------
+# INPUT SECTION
+# -------------------------
+st.markdown("### 📊 Company Risk Indicators")
+
+col1,col2 = st.columns(2)
+
+with col1:
+    industrial_risk = st.selectbox("Industrial Risk", risk.keys())
+    management_risk = st.selectbox("Management Risk", risk.keys())
+    financial_flexibility = st.selectbox("Financial Flexibility", risk.keys())
+
+with col2:
+    credibility = st.selectbox("Credibility", risk.keys())
+    competitiveness = st.selectbox("Competitiveness", risk.keys())
+    operating_risk = st.selectbox("Operating Risk", risk.keys())
+
+st.markdown("")
+
+# -------------------------
+# PREDICTION
+# -------------------------
+if st.button("Predict Bankruptcy Risk"):
+
+    features = np.array([[
+        risk[industrial_risk],
+        risk[management_risk],
+        risk[financial_flexibility],
+        risk[credibility],
+        risk[competitiveness],
+        risk[operating_risk]
+    ]])
+
+    prediction = model.predict(features)
+
+    prob = model.predict_proba(features)[0]
+
+    safe = prob[0] * 100
+    bankrupt = prob[1] * 100
+
+    st.markdown("## 📊 Prediction Results")
+
+    col3, col4 = st.columns(2)
+
+    with col3:
+        st.metric("Safe Probability", f"{safe:.2f}%")
+        st.progress(int(safe))
+
+    with col4:
+        st.metric("Bankruptcy Probability", f"{bankrupt:.2f}%")
+        st.progress(int(bankrupt))
+
+    # RESULT MESSAGE
+    if prediction[0] == 1:
+        st.markdown(
+            f"<div class='result-risk'>⚠ High Bankruptcy Risk ({bankrupt:.2f}%)</div>",
+            unsafe_allow_html=True
+        )
+    else:
+        st.markdown(
+            f"<div class='result-safe'>✅ Company is Financially Safe ({safe:.2f}%)</div>",
+            unsafe_allow_html=True
+        )
+
+    # -------------------------
+    # DOUGHNUT CHART
+    # -------------------------
+    st.markdown("### 📈 Bankruptcy Probability Visualization")
+
+    values = [safe, bankrupt]
+    colors = ["#7fb3d5", "#1f77b4"]
+
+    fig, ax = plt.subplots(figsize=(2.5,2.5))
+
+    fig.patch.set_alpha(0)
+    ax.set_facecolor("none")
+
+    wedges, texts, autotexts = ax.pie(
+        values,
+        colors=colors,
+        startangle=90,
+        autopct="%1.0f%%",
+        pctdistance=0.75,
+        wedgeprops=dict(width=0.45)
     )
 
-input_df = pd.DataFrame(input_data, index=[0])
+    for text in autotexts:
+        text.set_color("white")
+        text.set_fontsize(10)
+        text.set_weight("bold")
 
-# -----------------------------
-# Encode inputs safely
-# -----------------------------
-can_encode = True
-invalid_feature = None
-for col in feature_columns:
-    try:
-        input_df[col] = encoders[col].transform(input_df[col])
-    except ValueError:
-        can_encode = False
-        invalid_feature = col
-        break
+    ax.axis("equal")
 
-# -----------------------------
-# Prediction Button & Result
-# -----------------------------
-if st.button("Predict Bankruptcy"):
-    if not can_encode:
-        st.warning(f"⚠️ Prediction unavailable: Invalid input for **{invalid_feature.replace('_',' ').title()}**")
-    else:
-        prediction = model.predict(input_df)[0]
-        result = encoders['class'].inverse_transform([prediction])[0]
+    colA, colB, colC = st.columns([2,1,2])
+    with colB:
+        st.pyplot(fig, transparent=True)
 
-        if result.lower() == "bankruptcy":
-            st.markdown(
-                "<div style='background-color:#ffcccc; padding:20px; border-radius:10px; text-align:center;'>"
-                "<h2>⚠️ The company is predicted to <strong>BANKRUPT</strong></h2></div>", 
-                unsafe_allow_html=True
-            )
-        elif result.lower() == "non-bankruptcy":
-            st.markdown(
-                "<div style='background-color:#ccffcc; padding:20px; border-radius:10px; text-align:center;'>"
-                "<h2>✅ The company is predicted to <strong>NOT BANKRUPT</strong></h2></div>", 
-                unsafe_allow_html=True
-            )
-        else:
-            st.warning("⚠️ Prediction unavailable or invalid. Please check the input.")
-
-# -----------------------------
-# Footer / Notes
-# -----------------------------
+# -------------------------
+# FOOTER
+# -------------------------
 st.markdown("---")
-st.markdown("💡 **Tip:** Use the dropdowns to select financial risk levels. Values 0, 0.5, 1, and 2 represent increasing risk levels.")
+st.caption("Machine Learning Model: Random Forest | Streamlit  Dashboard")
+
+# # -----------------------------
+# # Footer / Notes
+# # -----------------------------
+# st.markdown("---")
+# st.markdown("💡 **Tip:** Use the dropdowns to select financial risk levels. Values 0, 0.5, 1, and 2 represent increasing risk levels.")
